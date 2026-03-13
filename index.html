@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Spin 🎡</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF8F0;
+    --text: #2d2d2d;
+    --muted: #888;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle, #FF6B6B22 2px, transparent 2px),
+      radial-gradient(circle, #FFD93D22 2px, transparent 2px),
+      radial-gradient(circle, #6BCB7722 2px, transparent 2px),
+      radial-gradient(circle, #4D96FF22 2px, transparent 2px);
+    background-size: 60px 60px, 80px 80px, 70px 70px, 90px 90px;
+    background-position: 0 0, 30px 30px, 15px 55px, 45px 10px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: var(--text);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    position: relative;
+    z-index: 1;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 28px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* WHEEL */
+  .wheel-wrap {
+    position: relative;
+    width: min(420px, 92vw);
+    height: min(420px, 92vw);
+    z-index: 1;
+    margin-top: 12px;
+  }
+  canvas#wheel {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 12px 40px rgba(0,0,0,0.18));
+  }
+  /* Pointer — top centre, pointing down into wheel */
+  .pointer {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 30px solid #2d2d2d;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,0.28));
+    z-index: 10;
+  }
+  /* Simple decorative hub — no click */
+  .hub {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 26px; height: 26px;
+    background: white;
+    border-radius: 50%;
+    border: 3px solid rgba(0,0,0,0.22);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Spin button */
+  .spin-btn {
+    position: relative;
+    z-index: 1;
+    margin-top: 30px;
+    background: linear-gradient(135deg, #FF6B6B, #FFD93D);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 60px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    box-shadow: 0 6px 22px rgba(255,107,107,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .spin-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,107,107,0.5); }
+  .spin-btn:active:not(:disabled) { transform: translateY(1px); }
+  .spin-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  /* RESULT OVERLAY */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    backdrop-filter: blur(4px);
+  }
+  .overlay.show { display: flex; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+  .result-card {
+    background: white;
+    border-radius: 28px;
+    padding: 36px 32px 28px;
+    max-width: 460px; width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn { from { transform:scale(0.7); opacity:0 } to { transform:scale(1); opacity:1 } }
+  .result-emoji { font-size: 3.5rem; margin-bottom: 10px; }
+  .result-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+  }
+  .result-desc {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .result-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .btn-go {
+    padding: 12px 32px;
+    border-radius: 50px; border: none;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    cursor: pointer; color: white;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  }
+  .btn-go:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+  .btn-close {
+    padding: 12px 24px;
+    border-radius: 50px;
+    border: 2px solid #ddd;
+    background: white;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem; font-weight: 700;
+    color: var(--muted); cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-close:hover { border-color: #aaa; color: var(--text); }
+  .coming-soon-tag {
+    display: inline-block;
+    background: #f5f5f5; color: #aaa;
+    font-size: 0.75rem; font-weight: 800;
+    letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 5px 16px; border-radius: 50px;
+    margin-bottom: 16px;
+    border: 1.5px dashed #ddd;
+  }
+
+  /* Question panel */
+  .question-box {
+    background: #EEF5FF;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border-left: 5px solid #4D96FF;
+    text-align: left;
+  }
+  .question-label {
+    font-size: 0.72rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: #1a5cc7; margin-bottom: 8px;
+  }
+  .question-text {
+    font-size: 1.08rem; font-weight: 700;
+    color: var(--text); line-height: 1.5;
+  }
+  .btn-skip {
+    background: none; border: none;
+    color: var(--muted);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; padding: 6px 10px;
+    border-radius: 8px;
+    transition: background 0.15s, color 0.15s;
+    margin-top: 6px;
+  }
+  .btn-skip:hover { background: #f0f0f0; color: var(--text); }
+
+  /* Legend */
+  .legend {
+    position: relative; z-index: 1;
+    margin-top: 22px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+    justify-content: center; max-width: 440px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 7px;
+    background: white; border-radius: 50px;
+    padding: 6px 14px 6px 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    font-size: 0.85rem; font-weight: 700;
+  }
+  .legend-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Confetti */
+  .confetti-piece {
+    position: fixed;
+    border-radius: 2px;
+    animation: fall linear forwards;
+    pointer-events: none; z-index: 200;
+  }
+  @keyframes fall {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🎡 Team Spin</h1>
+<p class="subtitle">Spin the wheel — see what the team does today!</p>
+
+<div class="wheel-wrap">
+  <canvas id="wheel" width="700" height="700"></canvas>
+  <div class="pointer"></div>
+  <div class="hub"></div>
+</div>
+
+<button class="spin-btn" id="spinBtn" onclick="spin()">SPIN!</button>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#FF6B6B"></div>Mood Board</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FFD93D"></div>Word Game</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6BCB77"></div>Mini-Quiz</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4D96FF"></div>Question</div>
+</div>
+
+<!-- RESULT OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="result-card">
+    <div class="result-emoji" id="resultEmoji"></div>
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-desc" id="resultDesc"></div>
+    <div id="questionArea" style="display:none">
+      <div class="question-box">
+        <div class="question-label">💬 Today's Question</div>
+        <div class="question-text" id="questionText"></div>
+      </div>
+      <button class="btn-skip" onclick="nextQuestion()">↩ Skip to next question</button>
+    </div>
+    <div class="result-actions" id="resultActions"></div>
+  </div>
+</div>
+
+<script>
+const segments = [
+  { label: "Mood Board", emoji: "🎨", color: "#FF6B6B", dark: "#cc4444" },
+  { label: "Word Game",  emoji: "📝", color: "#FFD93D", dark: "#b89200" },
+  { label: "Mini Quiz",  emoji: "🧠", color: "#6BCB77", dark: "#2e7d3a" },
+  { label: "Question",   emoji: "💬", color: "#4D96FF", dark: "#1a5cc7" },
+];
+
+const questions = [
+  "If your personality was a weather forecast, what would today's report say?",
+  "You can only communicate via Post-it notes for one full week — how does your life change?",
+  "If your job title had to be completely honest about what you actually do all day, what would it say?",
+  "A genie grants you one superpower but it only works on Tuesdays between 2–4pm. What do you choose?",
+  "You discover there's a secret door in this building. What do you hope is behind it?",
+  "If you had to describe your current mood as a sandwich filling, what would it be?",
+  "You're granted a 30-second phone call to your 16-year-old self — what's the one thing you say?",
+  "If you had to teach a masterclass on something you're unexpectedly good at, what would it be?",
+  "A company offers you your dream salary but you must always speak in questions. Do you take it?",
+  "What's one opinion you hold that you'd never say in a job interview?",
+  "If this team was a sports team, what sport would we play and what would our team name be?",
+  "You wake up tomorrow and every person on earth has read your browser history. What's your plan?",
+  "What's the most niche, specific skill you have that has zero obvious practical use?",
+  "If you could add one rule to society that everyone had to follow, what would it be?",
+  "You find an envelope containing £500 cash addressed to your younger self. What do you do with it?",
+  "If you had to live inside any video game, TV show, or film universe — but as a background character — which would you pick?",
+  "What's a hill you would absolutely die on, no matter how small or trivial it is?",
+  "If your life were a reality TV show, what would the producers love most about you?",
+  "You must swap jobs with someone in this team for one month. Who are you most and least excited to swap with?",
+  "If this organisation was a biscuit, which one would it be and why?",
+  "What's the most unexpected thing you've become genuinely passionate about in the last year?",
+  "You can only eat one meal for the rest of your life but gain a minor superpower — do you take the deal?",
+  "If a biopic was made about your life, who plays you and what's the title?",
+  "What's something you believed with total confidence as a child that turned out to be completely wrong?",
+  "If you had to delete every app from your phone except three, which survive?",
+];
+
+// ——— AUDIO (Web Audio API — zero files needed) ———
+let audioCtx = null;
+function ac() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+let lastTickSeg = -1;
+function maybePlayTick(rot, speed) {
+  const segIdx = Math.floor(((( 2*Math.PI - ((rot + Math.PI/2) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI)) % (2*Math.PI)) / (2*Math.PI/N))) % N;
+  if (segIdx !== lastTickSeg) {
+    lastTickSeg = segIdx;
+    const ctx = ac();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.frequency.value = 280 + Math.min(speed * 1200, 1000);
+    g.gain.setValueAtTime(0.15, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.055);
+    osc.start(); osc.stop(ctx.currentTime + 0.06);
+  }
+}
+
+function playWinChime() {
+  const ctx = ac();
+  [523, 659, 784, 1047, 1319].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const t = ctx.currentTime + i * 0.11;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.2, t + 0.025);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
+    osc.start(t); osc.stop(t + 0.45);
+  });
+}
+
+// ——— WHEEL ———
+const canvas = document.getElementById('wheel');
+const ctx2d = canvas.getContext('2d');
+const N = segments.length;
+const ARC = (2 * Math.PI) / N;
+// Start so segment 0 is centred at top (pointer position)
+let rotation = -Math.PI / 2 - ARC / 2;
+
+function drawWheel(rot) {
+  const cx = canvas.width / 2, cy = canvas.height / 2, r = cx - 12;
+  ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = 0; i < N; i++) {
+    const s = rot + i * ARC, e = s + ARC, mid = s + ARC / 2;
+    const seg = segments[i];
+
+    // Base fill
+    ctx2d.beginPath();
+    ctx2d.moveTo(cx, cy);
+    ctx2d.arc(cx, cy, r, s, e);
+    ctx2d.closePath();
+    ctx2d.fillStyle = seg.color;
+    ctx2d.fill();
+
+    // Subtle sheen
+    const grad = ctx2d.createRadialGradient(cx, cy, r*0.08, cx, cy, r);
+    grad.addColorStop(0, 'rgba(255,255,255,0.15)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.06)');
+    ctx2d.fillStyle = grad;
+    ctx2d.fill();
+
+    // Dividers
+    ctx2d.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx2d.lineWidth = 4;
+    ctx2d.stroke();
+
+    // Emoji — inner zone ~25% out
+    const er = r * 0.26;
+    ctx2d.save();
+    ctx2d.translate(cx + Math.cos(mid)*er, cy + Math.sin(mid)*er);
+    ctx2d.rotate(mid + Math.PI/2);
+    ctx2d.font = '46px serif';
+    ctx2d.textAlign = 'center';
+    ctx2d.textBaseline = 'middle';
+    ctx2d.fillText(seg.emoji, 0, 0);
+    ctx2d.restore();
+
+    // Label — outer zone ~68% out, large bold text
+    const lr = r * 0.66;
+    ctx2d.save();
+    ctx2d.translate(cx + Math.cos(mid)*lr, cy + Math.sin(mid)*lr);
+    ctx2d.rotate(mid + Math.PI/2);
+    ctx2d.shadowColor = 'rgba(0,0,0,0.35)';
+    ctx2d.shadowBlur = 5;
+    ctx2d.shadowOffsetX = 1; ctx2d.shadowOffsetY = 1;
+    ctx2d.font = '400 48px "Fredoka One", cursive';
+    ctx2d.textAlign = 'center';
+    ctx2d.textBaseline = 'middle';
+    ctx2d.fillStyle = 'white';
+    const words = seg.label.split(' ');
+    if (words.length === 2) {
+      ctx2d.fillText(words[0], 0, -27);
+      ctx2d.fillText(words[1], 0, 25);
+    } else {
+      ctx2d.fillText(seg.label, 0, 0);
+    }
+    ctx2d.restore();
+  }
+
+  // Outer ring
+  ctx2d.beginPath();
+  ctx2d.arc(cx, cy, r, 0, 2*Math.PI);
+  ctx2d.strokeStyle = 'rgba(0,0,0,0.1)';
+  ctx2d.lineWidth = 9;
+  ctx2d.stroke();
+
+  // Inner circle separator
+  ctx2d.beginPath();
+  ctx2d.arc(cx, cy, r*0.40, 0, 2*Math.PI);
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx2d.lineWidth = 3;
+  ctx2d.stroke();
+}
+
+drawWheel(rotation);
+
+// ——— SPIN ———
+let spinning = false;
+let qIndex = Math.floor(Math.random() * questions.length);
+let prevRot = rotation, prevT = 0;
+
+function spin() {
+  if (spinning) return;
+  spinning = true;
+  lastTickSeg = -1;
+  document.getElementById('spinBtn').disabled = true;
+  try { ac().resume(); } catch(e) {}
+
+  const totalAngle = (6 + Math.random()*5) * 2*Math.PI + Math.random()*2*Math.PI;
+  const duration = 3800 + Math.random()*1000;
+  const t0 = performance.now();
+  const r0 = rotation;
+
+  function ease(t) { return 1 - Math.pow(1-t, 4); }
+
+  function frame(now) {
+    const t = Math.min((now - t0) / duration, 1);
+    const newRot = r0 + totalAngle * ease(t);
+    const speed = prevT ? Math.abs(newRot - prevRot) / (now - prevT) : 0;
+    prevRot = newRot; prevT = now;
+    rotation = newRot;
+    drawWheel(rotation);
+    maybePlayTick(rotation, speed);
+    if (t < 1) { requestAnimationFrame(frame); }
+    else {
+      spinning = false;
+      document.getElementById('spinBtn').disabled = false;
+      playWinChime();
+      setTimeout(() => showResult(rotation), 220);
+    }
+  }
+  prevT = performance.now();
+  requestAnimationFrame(frame);
+}
+
+// ——— RESULT ———
+function showResult(rot) {
+  // Pointer is at top. Wheel started with seg 0 centred at top.
+  // Find which segment centre is nearest the top (angle = -π/2)
+  const normalised = ((rot + Math.PI/2) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+  const idx = Math.floor(((2*Math.PI - normalised) % (2*Math.PI)) / ARC) % N;
+  const seg = segments[idx];
+
+  document.getElementById('resultEmoji').textContent = seg.emoji;
+  document.getElementById('resultTitle').textContent = seg.label;
+  document.getElementById('resultTitle').style.color = seg.dark;
+
+  const qa = document.getElementById('questionArea');
+  const desc = document.getElementById('resultDesc');
+  const actions = document.getElementById('resultActions');
+  actions.innerHTML = ''; qa.style.display = 'none';
+
+  if (seg.label === 'Mood Board') {
+    desc.textContent = "Share how you're feeling today — open the mood board and show the team!";
+    actions.innerHTML = `
+      <button class="btn-go" style="background:linear-gradient(135deg,#FF6B6B,#FF8E53)"
+        onclick="window.open('https://www.dailymoodboards.com','_blank')">Open Mood Board 🎨</button>
+      <button class="btn-close" onclick="closeOverlay()">Close</button>`;
+
+  } else if (seg.label === 'Word Game') {
+    desc.textContent = "Time for a word game — link coming soon!";
+    actions.innerHTML = `
+      <div style="width:100%"><span class="coming-soon-tag">🔧 Add your link here</span></div>
+      <button class="btn-close" onclick="closeOverlay()">Close</button>`;
+    /* ——— TO ADD YOUR LINK: replace the two lines above with:
+       desc.textContent = "Today's word game — let's go!";
+       actions.innerHTML = '<button class="btn-go" style="background:linear-gradient(135deg,#FFD93D,#FF9500);color:#5c3d00" onclick="window.open(\'YOUR_URL_HERE\',\'_blank\')">Play Word Game 📝</button><button class="btn-close" onclick="closeOverlay()">Close</button>';
+    */
+
+  } else if (seg.label === 'Mini Quiz') {
+    desc.textContent = "Quiz time — link coming soon!";
+    actions.innerHTML = `
+      <div style="width:100%"><span class="coming-soon-tag">🔧 Add your link here</span></div>
+      <button class="btn-close" onclick="closeOverlay()">Close</button>`;
+    /* ——— TO ADD YOUR LINK: replace the two lines above with:
+       desc.textContent = "Let's quiz — head to the link!";
+       actions.innerHTML = '<button class="btn-go" style="background:linear-gradient(135deg,#6BCB77,#3aaa50)" onclick="window.open(\'YOUR_URL_HERE\',\'_blank\')">Open Quiz 🧠</button><button class="btn-close" onclick="closeOverlay()">Close</button>';
+    */
+
+  } else {
+    desc.textContent = "A question to get the team thinking and talking…";
+    qa.style.display = 'block';
+    document.getElementById('questionText').textContent = questions[qIndex % questions.length];
+    actions.innerHTML = `<button class="btn-close" onclick="closeOverlay()">Done ✓</button>`;
+  }
+
+  document.getElementById('overlay').classList.add('show');
+  launchConfetti(seg.color);
+}
+
+function nextQuestion() {
+  qIndex = (qIndex + 1) % questions.length;
+  document.getElementById('questionText').textContent = questions[qIndex];
+}
+function closeOverlay() { document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeOverlay(); });
+
+// ——— CONFETTI ———
+function launchConfetti(base) {
+  const cols = [base,'#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#FF8E53','#A855F7'];
+  for (let i = 0; i < 70; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.cssText = `left:${Math.random()*100}vw;top:-20px;background:${cols[i%cols.length]};width:${7+Math.random()*9}px;height:${7+Math.random()*9}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${1.5+Math.random()*2.5}s;animation-delay:${Math.random()*.4}s`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 5000);
+    }, i * 18);
+  }
+}
+</script>
+</body>
+</html>
