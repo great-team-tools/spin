@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Team Spin 🎡</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #FFF8F0;
@@ -37,7 +37,8 @@
     z-index: 0;
   }
   h1 {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
     font-size: clamp(2rem, 5vw, 3rem);
     color: var(--text);
     letter-spacing: 1px;
@@ -104,9 +105,9 @@
     border: none;
     border-radius: 50px;
     padding: 16px 60px;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
     font-size: 1.8rem;
-    letter-spacing: 1.5px;
     cursor: pointer;
     box-shadow: 0 6px 22px rgba(255,107,107,0.4);
     transition: transform 0.15s, box-shadow 0.15s;
@@ -140,9 +141,9 @@
   @keyframes popIn { from { transform:scale(0.7); opacity:0 } to { transform:scale(1); opacity:1 } }
   .result-emoji { font-size: 3.5rem; margin-bottom: 10px; }
   .result-title {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
     font-size: 2.2rem;
-    margin-bottom: 8px;
   }
   .result-desc {
     color: var(--muted);
@@ -155,9 +156,9 @@
   .btn-go {
     padding: 12px 32px;
     border-radius: 50px; border: none;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
     font-size: 1.2rem;
-    cursor: pointer; color: white;
     transition: transform 0.15s, box-shadow 0.15s;
     box-shadow: 0 4px 14px rgba(0,0,0,0.15);
   }
@@ -404,7 +405,7 @@ function drawWheel(rot) {
     ctx2d.shadowColor = 'rgba(0,0,0,0.35)';
     ctx2d.shadowBlur = 5;
     ctx2d.shadowOffsetX = 1; ctx2d.shadowOffsetY = 1;
-    ctx2d.font = '400 48px "Fredoka One", cursive';
+    ctx2d.font = '600 44px "Poppins", sans-serif';
     ctx2d.textAlign = 'center';
     ctx2d.textBaseline = 'middle';
     ctx2d.fillStyle = 'white';
