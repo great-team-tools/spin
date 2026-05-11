@@ -1315,9 +1315,8 @@ function showResult(rot) {
 
   } else if (seg.label === 'Word Game') {
     const nytGames = [
-      { name: 'Wordle',        url: 'https://www.nytimes.com/games/wordle/index.html',   emoji: '🟩' },
-      { name: 'Connections',   url: 'https://www.nytimes.com/games/connections',         emoji: '🔗' },
-      { name: 'Mini Crossword',url: 'https://www.nytimes.com/crosswords/game/mini',      emoji: '✏️' },
+      { name: 'Wordle',      url: 'https://www.nytimes.com/games/wordle/index.html', emoji: '🟩' },
+      { name: 'Connections', url: 'https://www.nytimes.com/games/connections',       emoji: '🔗' },
     ];
     // Rotate daily through the three games
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(),0,0)) / 86400000);
