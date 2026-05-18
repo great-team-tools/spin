@@ -257,9 +257,9 @@
 
 <button class="spin-btn" id="spinBtn" onclick="spin()">SPIN!</button>
 
-<p style="position:relative;z-index:1;margin-top:32px;font-size:0.78rem;color:#bbb;font-weight:600;text-align:center;">
+<p style="position:relative;z-index:1;margin-top:62px;font-size:0.78rem;color:#bbb;font-weight:600;text-align:center;">
   If you would like a custom version of this wheel for your team please
-  <a href="mailto:gavin.williams@landregistry.gov.uk?subject=Daily%20Team%20Spinner%20Custom%20Request" style="display:inline-block;margin-left:4px;padding:3px 12px;background:#f0f0f0;color:#888;border-radius:50px;font-size:0.75rem;font-weight:700;text-decoration:none;border:1.5px solid #ddd;transition:background 0.15s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">click here</a>
+  <a href="mailto:gavin.williams@landregistry.gov.uk?subject=Daily%20Team%20Spinner%20Custom%20Request" style="color:#6b9fd4;text-decoration:none;font-weight:700;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">click here</a>
   to send an email request
 </p>
 
@@ -1167,9 +1167,9 @@ const canvas = document.getElementById('wheel');
 const ctx2d = canvas.getContext('2d');
 const N = segments.length;
 
-// Weighted arcs: Word Game 33%, Mini Quiz 33%, Mood Board 17%, Question 17%
+// Equal arcs: all four segments 25% each
 // Segment order: Mood Board, Word Game, Mini Quiz, Question
-const weights = [0.17, 0.33, 0.33, 0.17];
+const weights = [0.25, 0.25, 0.25, 0.25];
 const totalWeight = weights.reduce((a, b) => a + b, 0);
 const arcs = weights.map(w => (w / totalWeight) * 2 * Math.PI);
 // Cumulative start angles for each segment
@@ -1270,10 +1270,24 @@ function spin() {
   document.getElementById('spinBtn').disabled = true;
   try { ac().resume(); } catch(e) {}
 
-  const totalAngle = (6 + Math.random()*5) * 2*Math.PI + Math.random()*2*Math.PI;
+  // Pick a random target segment — never Question (index 3)
+  const allowed = [0, 1, 2]; // Mood Board, Word Game, Mini Quiz
+  const targetSeg = allowed[Math.floor(Math.random() * allowed.length)];
+  // Land in the middle of the target segment
+  const targetAngleInWheel = arcStarts[targetSeg] + arcs[targetSeg] / 2;
+  // We need: (-π/2 - finalRot) mod 2π === targetAngleInWheel
+  // So finalRot = -π/2 - targetAngleInWheel (mod 2π)
+  const baseRot = -Math.PI/2 - targetAngleInWheel;
+  // Add multiple full spins for visual effect (6–11 full rotations)
+  const fullSpins = (6 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+  const r0 = rotation;
+  // Normalise so we always spin forward (positive direction)
+  let targetRot = baseRot - (Math.floor((baseRot - r0) / (2*Math.PI)) * 2*Math.PI);
+  if (targetRot <= r0) targetRot += 2*Math.PI;
+  const totalAngle = (targetRot - r0) + fullSpins;
+
   const duration = 3800 + Math.random()*1000;
   const t0 = performance.now();
-  const r0 = rotation;
 
   function ease(t) { return 1 - Math.pow(1-t, 4); }
 
